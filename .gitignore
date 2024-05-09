@@ -1,1 +1,5 @@
 .ipynb_checkpoints
+__pycache__
+data/
+models/best_RF.pkl
+models/best_XGB.pkl

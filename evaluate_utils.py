@@ -21,10 +21,9 @@ def evaluate(model, X_test, y_test, label_encoder=None):
     ACC = accuracy_score(y_test, y_pred, normalize=True)
     macro_F1 = f1_score(y_test, y_pred, average='macro')
 
-    with open("data_baselines.pkl", "rb") as f:
-        df = pickle.load(f)
-    cell_types = df['label'].unique()
-    cell_types.sort() 
+    with open("./util/cell_types.pkl", "rb") as f:
+        cell_types = pickle.load(f)
+        
     # Confusion matrix:
     disp = ConfusionMatrixDisplay.from_predictions(y_test, y_pred, xticks_rotation='vertical', display_labels=cell_types)
     fig = disp.figure_
