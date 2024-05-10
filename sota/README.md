@@ -13,4 +13,5 @@
     - evaluation data should be put unzipped in `test/`
     - checkpoint filenames are read from `cellslighter/checkpoints_path.txt`
     - all checkpoints are read from `cellslighter/checkpoints/`
+    - to run a validation on pretrained weights download checkpoints from <https://mega.nz/file/oWtkjZKB#ZEzWKBLw61Ac3QmVh3GR1Nhul9HGBkP0Mn3-1VQ7nHc> to `cellslighter/checkpoints/`
   
