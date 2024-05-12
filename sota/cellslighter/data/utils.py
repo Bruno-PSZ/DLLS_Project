@@ -8,15 +8,15 @@ import pyometiff
 import scanpy as sc
 import scipy.ndimage as ndimage
 
-from data.cellcrop import CellCrop
+from .cellcrop import CellCrop
 
 CELL_DATA_FILE = "cell_data.h5ad"
 DATA_IMAGES_PATH = "images_masks/img/"
 DATA_MASKS_PATH = "images_masks/masks/"
 CELL_TYPES = ['plasma', 'B', 'CD4', 'Treg', 'BnT', 'Tumor', 'NK', 'HLADR', 'Neutrophil', 'CD8', 'pDC', 'DC', 'MacCD163',
               'Mural']
-CELL_TYPE_DICT = {ctype: cid for ctype, cid in enumerate(CELL_TYPES, 1)} | {cid: ctype for ctype, cid in
-                                                                            enumerate(CELL_TYPES, 1)}
+CELL_TYPE_DICT = {ctype: cid for ctype, cid in enumerate(CELL_TYPES)} | {cid: ctype for ctype, cid in
+                                                                            enumerate(CELL_TYPES)}
 
 
 @dataclasses.dataclass(eq=True, frozen=True)
@@ -31,7 +31,7 @@ class CellCropLoader:
                  cell_data_file: str = CELL_DATA_FILE,
                  data_images_path: str = DATA_IMAGES_PATH,
                  data_masks_path: str = DATA_MASKS_PATH,
-                 crop_size=30):
+                 crop_size=120):
         self.root_dir = root_dir
         self.cell_data_file = cell_data_file
         self.data_images_path = data_images_path
@@ -101,11 +101,13 @@ class CellCropLoader:
     def prepare_cell_crops(self):
         cell_data = sc.read_h5ad(os.path.join(self.root_dir, self.cell_data_file))
         crops = []
+        num_classes = len(CELL_TYPE_DICT)
+        class_other = 14
 
         for i in range(cell_data.n_obs):
             if i % 10000 == 0:
                 print(f"Processed {i}/{cell_data.n_obs} cells")
-            #if i > 5000:
+            #if i > 30000:
             #   print("Stopping at 10000 cells")
             #   break
             cell = cell_data.obs.iloc[i]
@@ -120,6 +122,7 @@ class CellCropLoader:
                 if slc.stop - slc.start != self.crop_size:
                     flag = 1
             if flag == 0:
-                crops.append(CellCrop(cell_id.cell_number, image, mask, CELL_TYPE_DICT[cell['cell_labels']], slices))
+                label = CELL_TYPE_DICT.get(cell['cell_labels'], class_other)
+                crops.append(CellCrop(cell_id.cell_number, image, mask, label, slices))
 
         return crops

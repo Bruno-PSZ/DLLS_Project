@@ -4,11 +4,13 @@ from torchvision import models
 from torchmetrics.classification import MulticlassAccuracy, MulticlassF1Score, Precision, AUROC
 import torch
 from icecream import ic
+import timm
 
 
 class CellSlighter(L.LightningModule):
     def __init__(self,
-                 classes_num: int, input_len: int = 42, dropouts: dict[str, list[float]] | None = None,
+                 classes_num: int, input_len: int = 42, img_size: int | tuple[int, int] = 30,
+                 dropouts: dict[str, list[float]] | None = None,
                  heads_architecture: dict[str, list[int]] | None = None, learning_rate: float = 1e-3,
                  weight_decay: float = 1e-5, backbone: str = 'resnet50',
                  backbone_trainable_layers: int = 1
@@ -46,14 +48,19 @@ class CellSlighter(L.LightningModule):
                     [last_channel, *layers, classes_num], dropouts[name]) for name, layers in heads_architecture.items()
             })
             # TODO:
-        else:
+        elif backbone == 'resnet50':
             self.backbone: nn.Module = getattr(models, backbone)(num_classes=classes_num)
             self.heads: nn.Module = nn.Identity()
-        
-        if backbone == 'resnet50':
-            self.backbone.conv1 = nn.Conv2d(input_len, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+            self.backbone.conv1 = nn.Conv2d(input_len, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3),
+                                            bias=False)
+        elif backbone == 'resnet50.a1_in1k':
+            model = timm.create_model('resnet50.a1_in1k', pretrained=True)
         # for param in self.backbone[:-backbone_trainable_layers].parameters():
         #    param.requires_grad = False
+        elif backbone == 'vit':
+            self.backbone = timm.create_model('vit_tiny_patch16_224.augreg_in21k_ft_in1k', pretrained=False,
+                                              img_size=img_size, in_chans=input_len, num_classes=self.classes_num)
+            self.heads: nn.Module = nn.Identity()
     
     def _make_classifier(self, layers, dropouts):
         # print(layers)
@@ -96,7 +103,7 @@ class CellSlighter(L.LightningModule):
             "f1_macro_train": self.f1_macro_overall(y_hat, y),
             "precision_cell_avg_train": self.precision_cell_avg(y_hat, y),
             "auroc_cell_train": self.auroc_cell(y_hat, y)
-        }, logger=True, on_step=False, on_epoch=True, sync_dist=True)
+        }, logger=True, on_step=True, on_epoch=True, sync_dist=True)
         return loss
     
     def validation_step(self, batch: tuple[torch.tensor, torch.tensor], batch_idx: int) -> None:
@@ -114,7 +121,7 @@ class CellSlighter(L.LightningModule):
             "f1_macro_val": self.f1_macro_overall(y_hat, y),
             "precision_cell_avg_val": self.precision_cell_avg(y_hat, y),
             "auroc_cell_val": self.auroc_cell(y_hat, y)
-        }, logger=True, on_step=False, on_epoch=True, sync_dist=True)
+        }, logger=True, on_step=True, on_epoch=True, sync_dist=True)
     
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate,
