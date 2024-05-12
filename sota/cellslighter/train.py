@@ -19,13 +19,13 @@ def main():
     )
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(script_dir)
-    train_dir = os.path.join(project_dir, 'train/train')
+    train_dir = os.path.join(project_dir, 'train')
     cell_crop_loader = CellCropLoader(
         train_dir,
         cell_data_file='cell_data.h5ad',
         data_images_path='images_masks/img/',
         data_masks_path='images_masks/masks/',
-        crop_size=15
+        crop_size=90
     )
     train_transform = v2.Compose([
     RandomSubsetTransform([
@@ -42,24 +42,24 @@ def main():
     ])
     crops = cell_crop_loader.prepare_cell_crops()
     dataset = CellDataset(crops, train_transform)
-    datamodule = CellDataModule(dataset, batch_size=128)
+    datamodule = CellDataModule(dataset, batch_size=128, num_workers=0, pin_memory=True, persistent_workers=True)
 
     rng = torch.Generator()
     unique_id = torch.randint(0, 1000000, (1,), generator=rng).item()
-    ckpt_filename = f'cellslighter-{unique_id}-{{epoch:02d}}-{{val_loss:.2f}}'
+    ckpt_filename = f'cellslighter-{unique_id}-{{epoch:02d}}-{{loss_val:.2f}}'
     checkpoint_callback = ModelCheckpoint(
         dirpath='checkpoints',
         filename=ckpt_filename,
         save_top_k=3,
-        monitor='val_loss',
+        monitor='loss_val',
         mode='min',
         save_last=True,
     )
     trainer = L.Trainer(
         max_epochs=2,
         devices=1,
-        accelerator='cpu',
-        precision="32",
+        accelerator='auto',
+        precision="16",
         logger=wandb_logger,
         callbacks=[checkpoint_callback]
     )
