@@ -18,13 +18,14 @@ def main():
         project='cellsighter2137'
     )
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    test_dir = os.path.join(script_dir, '..', 'train')
+    project_dir = os.path.dirname(script_dir)
+    train_dir = os.path.join(project_dir, 'train/train')
     cell_crop_loader = CellCropLoader(
-        '/workspace/DL/train',
+        train_dir,
         cell_data_file='cell_data.h5ad',
         data_images_path='images_masks/img/',
         data_masks_path='images_masks/masks/',
-        crop_size=60
+        crop_size=15
     )
     train_transform = v2.Compose([
     RandomSubsetTransform([
@@ -41,7 +42,7 @@ def main():
     ])
     crops = cell_crop_loader.prepare_cell_crops()
     dataset = CellDataset(crops, train_transform)
-    datamodule = CellDataModule(dataset, batch_size=1024)
+    datamodule = CellDataModule(dataset, batch_size=128)
 
     rng = torch.Generator()
     unique_id = torch.randint(0, 1000000, (1,), generator=rng).item()
@@ -52,14 +53,13 @@ def main():
         save_top_k=3,
         monitor='val_loss',
         mode='min',
-        period=1,
         save_last=True,
     )
     trainer = L.Trainer(
-        max_epochs=15,
+        max_epochs=2,
         devices=1,
-        accelerator='auto',
-        precision="16-mixed",
+        accelerator='cpu',
+        precision="32",
         logger=wandb_logger,
         callbacks=[checkpoint_callback]
     )

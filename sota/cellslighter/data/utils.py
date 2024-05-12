@@ -49,8 +49,8 @@ class CellCropLoader:
             np.arcsinh(image / 5.), ((0, 0), (self.crop_size // 2, self.crop_size // 2),
             (self.crop_size // 2, self.crop_size // 2)))
         mask = np.pad(mask, ((self.crop_size // 2, self.crop_size // 2), (self.crop_size // 2, self.crop_size // 2)))
-        ic("CellCropLoader", image.shape)
-        ic("CellCropLoader", mask.shape)
+      #  ic("CellCropLoader", image.shape)
+      #  ic("CellCropLoader", mask.shape)
         return image, mask
 
     @classmethod
