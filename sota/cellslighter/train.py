@@ -42,7 +42,7 @@ def main():
     ])
     crops = cell_crop_loader.prepare_cell_crops()
     dataset = CellDataset(crops, train_transform)
-    datamodule = CellDataModule(dataset, batch_size=128, num_workers=1, pin_memory=True, persistent_workers=True)
+    datamodule = CellDataModule(dataset, batch_size=1024, num_workers=4, pin_memory=True, persistent_workers=True)
 
     rng = torch.Generator()
     unique_id = torch.randint(0, 1000000, (1,), generator=rng).item()
